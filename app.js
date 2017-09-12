@@ -9,12 +9,14 @@ var routes = require('./routes/index');
 var todos = require('./routes/todos');//Jason add on 2017.02.21
 //Jason add on 2017.02.16 - start
 var RED = require("node-red");
-var http = require('http'),
-    https = require('https');
+var http = require('http');
 var session = require('express-session');
 var settings = require('./settings');
 var flash = require('connect-flash');
 //Jason add on 2017.02.16 - end
+//Jason add on 2017.09.07 for account
+var crypto = require('crypto');
+var dbUtil = require('./models/dbUtil.js');
 var app = express();
 
 var port = process.env.PORT || 3001;
@@ -55,6 +57,8 @@ var setting = {
     }    // enables global context
 };
 
+accountAdmin();
+
 // Initialise the runtime with a server and settings
 RED.init(server,setting);
 
@@ -68,3 +72,32 @@ server.listen(port);
 
 // Start the runtime
 RED.start();
+
+function accountAdmin(){
+	var obj = {
+    "selector": {
+      "category": "account"
+      },
+      "skip": 0
+    };
+  
+  var md5 = crypto.createHash('md5');
+  var	password = md5.update(settings.secret).digest('hex');
+  var obj2 = {
+    category: "account",
+    account: "admin",
+    password: password,
+    enable: true,
+    level: 0,
+    date: new Date()
+  };
+	dbUtil.queryDoc(obj).then(function(value) {
+		// on fulfillment(已實現時)
+      var units = value.docs;
+      if(value.docs.length === 0){
+        dbUtil.insert(obj2);
+      }
+		}, function(reason) {
+		// on rejection(已拒絕時)
+		});
+}

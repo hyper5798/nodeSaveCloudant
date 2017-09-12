@@ -9,6 +9,7 @@ var overtime = 24;
 var hour = 60*60*1000;
 //Save data to file path
 var path = './public/data/finalList.json';
+var mapPath = './public/data/parseMap.json';
 //Save data
 var finalList = {},deviceMap = {};
 var finalListRev = '',deviceMapRev = '';
@@ -133,6 +134,17 @@ function setDeviceMap(mapObj) {
     deviceMap = mapObj;
 }
 
+function setDeviceMapFromFile() {
+    var obj = JsonFileTools.getJsonFromFile(mapPath);
+    dbUtil.insert(obj,"device-map").then(function(value) {
+        // on fulfillment(已實現時)
+        console.log("#### Insert device-map success :"+ JSON.stringify(value));
+      }, function(reason) {
+        // on rejection(已拒絕時)
+        console.log("???? Insert device-map fail :" + SON.stringify(reason));
+      });
+}
+
 function getDeviceMap() {
     return deviceMap;
 }
@@ -142,8 +154,9 @@ function saveFinalListToFile(list) {
     if(list === null || list === undefined){
         list = finalList;
     }
+    //For verify finalList is include _rev information
     var keys = Object.keys(list);
-    if(keys.length>1){
+    if(keys.includes("_rev")){//FinalList is from DB include _rev and finalList key 
         keys.splice(0,2);
         if(keys.length === 0){
             return;
@@ -159,7 +172,10 @@ function saveFinalListToFile(list) {
             // on rejection(已拒絕時)
             console.log("???? Update finalList fail :" + reason);
           });
-    }else{
+    }else if(keys.length===0) { //No finalList
+        console.log("???? No finalList data");
+        return;
+    }else {
         dbUtil.insert(list,'finalList').then(function(value) {
             // on fulfillment(已實現時)
             console.log("#### Update finalList success :"+ JSON.stringify(value));
@@ -310,6 +326,7 @@ module.exports = {
     updateDeviceMap,
     updateFinalList,
     setDeviceMap,
+    setDeviceMapFromFile,
     getDeviceMap
   }
 
